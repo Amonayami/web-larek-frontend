@@ -1,19 +1,6 @@
-export type CategoryType =
-	| 'другое'
-	| 'софт-скил'
-	| 'дополнительное'
-	| 'кнопка'
-	| 'хард-скил';
+export type CategoryType = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
 export type PaymentType = 'online' | 'cash';
-export type AppEvent =
-	| 'card:select'
-	| 'card:deselect'
-	| 'basket:open'
-	| 'basket:submit'
-	| 'order:submit'
-	| 'order:success'
-	| 'modal:open'
-	| 'modal:close';
+export type AppEvent = 'card:select' | 'card:deselect' | 'basket:open' | 'basket:submit' | 'order:submit' | 'order:success' | 'modal:open' | 'modal:close';
 
 export interface ICard {
 	id: string;
@@ -63,10 +50,7 @@ export interface IOrder {
 }
 
 export type TMain = Pick<ICard, 'category' | 'title' | 'image' | 'price'>;
-export type TCardModal = Pick<
-	ICard,
-	'category' | 'title' | 'description' | 'image' | 'price'
->;
+export type TCardModal = Pick<ICard, 'category' | 'title' | 'description' | 'image' | 'price'>;
 export type TCartModal = Pick<ICard, 'title' | 'price'>;
 export type TOrderModal = Pick<IOrder, 'payment' | 'address'>;
 export type TContactModal = Pick<IOrder, 'email' | 'phone'>;
