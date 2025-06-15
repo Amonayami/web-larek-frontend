@@ -1,56 +1,83 @@
-export type CategoryType = 'другое' | 'софт-скил' | 'дополнительное' | 'кнопка' | 'хард-скил';
-export type PaymentType = 'online' | 'cash';
-export type AppEvent = 'card:select' | 'card:deselect' | 'basket:open' | 'basket:submit' | 'order:submit' | 'order:success' | 'modal:open' | 'modal:close';
-
-export interface ICard {
+// Данные от API
+export interface IProduct {
 	id: string;
 	description: string;
 	image: string;
 	title: string;
-	category: CategoryType;
+	category: string;
 	price: number;
 }
 
-export interface ICardsData {
-	cards: ICard[];
-	preview: string | null;
-	getCard(id: string): ICard;
-	hasSelected(): boolean;
+// Данные для отображения
+export interface IViewProduct {
+	id: string;
+	image: string;
+	title: string;
+	category: string;
+	price: number;
+	description?: string;
 }
 
-export interface ICartData {
-	items: ICard[];
-	getTotalPrice(): number;
-	addItem(item: ICard): void;
-	deleteItem(id: string): void;
-	hasItems(): boolean;
-}
-
+// Заказ и оплата
+export type PaymentMethod = 'card' | 'cash';
 export interface IOrderData {
-	payment: PaymentType;
+	payment: PaymentMethod;
 	address: string;
 	email: string;
-	phone: string;
-	setPayment(type: PaymentType): void;
+	telephone: string;
+}
+export interface IOrderResponse {
+	id: string;
+	total: number;
+}
+
+// API-клиент
+export interface IApiClient {
+	getProducts(): Promise<IProduct[]>;
+	sendOrder(order: IOrderData): Promise<IOrderResponse>;
+}
+
+//Модель корзины
+export interface ICartModel {
+	items: IProduct[];
+	addItem(item: IProduct): void;
+	removeItem(id: string): void;
+	clear(): void;
+	getItems(): IProduct[];
+	getTotal(): number;
+	on(event: 'change', listener: () => void): void;
+}
+
+//Модель заказа
+export interface IOrderModel {
+	setPayment(payment: PaymentMethod): void;
 	setAddress(address: string): void;
-	setContactInfo(email: string, phone: string): void;
-	isValid(): boolean;
+	setContacts(email: string, telephone: string): void;
+	getOrder(): IOrderData;
+	clear(): void;
+	on(event: 'change', listener: () => void): void;
 }
 
-export interface ICart {
-	cards: ICard[];
-	price: number;
+//События и брокер
+export type AppEvent =
+	| 'products:changed'
+	| 'product:selected'
+	| 'cart:changed'
+	| 'order:changed'
+	| 'order:submitted'
+	| 'error';
+
+export interface IAppEventPayload {
+	'products:changed': void;
+	'product:selected': { id: string };
+	'cart:changed': { total: number; count: number };
+	'order:changed': Partial<IOrderData>;
+	'order:submitted': { orderId: string };
+	error: { message: string };
 }
 
-export interface IOrder {
-	payment: PaymentType;
-	address: string;
-	email: string;
-	phone: string;
+export interface IEventEmitter {
+	on<T extends AppEvent>(event: T, listener: (payload: IAppEventPayload[T]) => void): void;
+	off<T extends AppEvent>(event: T, listener: (payload: IAppEventPayload[T]) => void): void;
+	emit<T extends AppEvent>(event: T, payload: IAppEventPayload[T]): void;
 }
-
-export type TMain = Pick< ICard, 'category' | 'title' | 'image' | 'price' >;
-export type TCardModal = Pick< ICard, 'category' | 'title' | 'description' | 'image' | 'price' >;
-export type TCartModal = Pick< ICard, 'title' | 'price' >;
-export type TOrderModal = Pick< IOrder, 'payment' | 'address' >;
-export type TContactModal = Pick< IOrder, 'email' | 'phone' >;
