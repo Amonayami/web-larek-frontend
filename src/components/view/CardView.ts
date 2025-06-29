@@ -2,38 +2,54 @@ import { ICard, TMain, TCardModal, TCartModal } from '../../types/index';
 import { EventEmitter } from '../base/events';
 import { CDN_URL } from '../../utils/constants';
 
-// Тип данных карточки может быть каталогом, превью или корзиной
 type CardData = TMain | TCardModal | TCartModal;
-
-// Дополнительные опции отрисовки карточки
 type CardOptions = {
-	addable?: boolean; // если true — показывать кнопку добавления в корзину
-	removable?: boolean; // если true — показывать кнопку удаления из корзины
-	disabled?: boolean; // если true — кнопка "в корзину" будет отключена
+	addable?: boolean;
+	removable?: boolean;
+	disabled?: boolean;
 };
 
 export class CardView {
 	protected template: HTMLTemplateElement;
+	protected categoryColors: Record<string, string> = {
+		'софт-скил': 'soft',
+		другое: 'other',
+		кнопка: 'button',
+		'хард-скил': 'hard',
+		дополнительное: 'additional',
+	};
 
 	constructor(template: HTMLTemplateElement, protected emitter: EventEmitter) {
 		this.template = template;
 	}
 
+	protected setText(el: HTMLElement, value: unknown) {
+		if (el) {
+			el.textContent = String(value);
+		}
+	}
+	protected setCategory(el: HTMLElement, value: string) {
+		this.setText(el, value);
+		const raw = value.toLowerCase().trim();
+		const cls = this.categoryColors[raw] ?? 'other';
+		el.className = `card__category card__category_${cls}`;
+	}
+
 	render(data: CardData, options: CardOptions = {}): HTMLElement {
-		// Клонируем шаблон карточки
 		const card = this.template.content.firstElementChild!.cloneNode(
 			true
 		) as HTMLElement;
 
-		// Устанавливаем заголовок карточки
-		const title = card.querySelector('.card__title');
-		if (title) title.textContent = data.title;
+		const title = card.querySelector('.card__title') as HTMLElement;
+		if (title) this.setText(title, data.title);
 
-		// Устанавливаем цену
-		const price = card.querySelector('.card__price');
-		if (price) price.textContent = `${data.price} синапсов`;
-
-		// Устанавливаем изображение (если доступно)
+		const price = card.querySelector('.card__price') as HTMLElement;
+		if (price) {
+			const isFree = typeof (data as ICard).price !== 'number';
+			price.textContent = isFree
+				? 'Бесценно'
+				: `${(data as ICard).price} синапсов`;
+		}
 		const image = card.querySelector('.card__image') as HTMLImageElement | null;
 		if (image && 'image' in data) {
 			image.src = data.image.startsWith('http')
@@ -41,51 +57,56 @@ export class CardView {
 				: `${CDN_URL.replace(/\/$/, '')}${data.image}`;
 			image.alt = data.title;
 		}
-
-		// Устанавливаем категорию (если доступно)
-		const category = card.querySelector('.card__category');
+		const category = card.querySelector('.card__category') as HTMLElement;
 		if (category && 'category' in data) {
-			category.textContent = data.category;
-			category.classList.add(`card__category_${data.category}`);
+			this.setCategory(category, data.category);
 		}
-
-		// Устанавливаем описание (если доступно)
-		const description = card.querySelector('.card__text');
+		const description = card.querySelector('.card__text') as HTMLElement;
 		if (description && 'description' in data) {
-			description.textContent = data.description;
+			this.setText(description, data.description);
 		}
-
-		// Если карточка может быть добавлена в корзину
 		if (options.addable) {
-			const addButton = card.querySelector('button');
-			if (addButton instanceof HTMLButtonElement) {
-				addButton.textContent = options.disabled
-					? 'Товар уже в корзине'
-					: 'В корзину';
-				if (options.disabled) {
-					addButton.setAttribute('disabled', 'true');
+			const addButton = card.querySelector(
+				'.card__button'
+			) as HTMLButtonElement;
+
+			if (addButton) {
+				const priceValue = 'price' in data ? data.price : undefined;
+				const isFree = typeof priceValue !== 'number' || priceValue <= 0;
+				if (isFree) {
+					addButton.textContent = 'Недоступен';
+					addButton.disabled = true;
+					addButton.classList.add('card__button--disabled');
+				} else if (options.disabled) {
+					addButton.textContent = 'Товар уже в корзине';
+					addButton.disabled = true;
+					addButton.classList.add('card__button--disabled');
 				} else {
+					addButton.textContent = 'В корзину';
+					addButton.disabled = false;
+					addButton.classList.remove('card__button--disabled');
 					addButton.addEventListener('click', (e) => {
 						e.stopPropagation();
-						this.emitter.emit('basket:add', { id: (data as ICard).id });
+						if ('id' in data) {
+							this.emitter.emit('basket:add', { id: data.id });
+						}
 					});
 				}
 			}
 		}
-
-		// Если карточку можно удалить из корзины
 		if (options.removable) {
-			const deleteButton =
-				card.querySelector('.basket__item-delete') ??
-				card.querySelector('.card__button');
+			const deleteButton = card.querySelector(
+				'.basket__item-delete'
+			) as HTMLButtonElement;
 			deleteButton?.addEventListener('click', (e) => {
 				e.stopPropagation();
 				this.emitter.emit('card:deselect', { id: (data as ICard).id });
 			});
 		}
-
-		// При клике на карточку — открытие превью
 		card.addEventListener('click', () => {
+			const button = card.querySelector('.card__button') as HTMLButtonElement;
+			if (button?.disabled) return;
+
 			if ('id' in data) {
 				this.emitter.emit('card:select', { id: data.id });
 			}

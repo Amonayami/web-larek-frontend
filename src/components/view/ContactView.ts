@@ -9,7 +9,6 @@ import {
 } from '../../utils/validation';
 
 export class ContactView {
-	// Получаем шаблон формы из HTML
 	protected template = document.getElementById(
 		'contacts'
 	) as HTMLTemplateElement;
@@ -17,7 +16,6 @@ export class ContactView {
 	constructor(protected emitter: EventEmitter) {}
 
 	render(data: TContactModal): HTMLElement {
-		// Клонируем содержимое шаблона формы
 		const clone = this.template.content.cloneNode(true) as HTMLElement;
 		const form = clone.querySelector('form')!;
 		const emailInput = form.elements.namedItem('email') as HTMLInputElement;
@@ -26,16 +24,11 @@ export class ContactView {
 			'button[type="submit"]'
 		);
 		const errorSpan = form.querySelector<HTMLSpanElement>('.form__errors');
-
 		const toggleSubmitState = () => {
 			const email = emailInput.value.trim();
 			const phone = phoneInput.value.trim();
 			const isValid = isContactValid(email, phone);
-
-			// Блокировка/разблокировка кнопки отправки
 			if (submitButton) submitButton.disabled = !isValid;
-
-			// Отображение текстов ошибок
 			if (errorSpan) {
 				if (!email && !phone) {
 					errorSpan.textContent = 'Введите email и телефон';
@@ -48,12 +41,8 @@ export class ContactView {
 				}
 			}
 		};
-
-		// Заполняем поля из переданных данных
 		emailInput.value = data.email;
 		phoneInput.value = data.phone;
-
-		// Обработка ввода email
 		emailInput.addEventListener('input', () => {
 			this.emitter.emit('contacts:change', {
 				field: 'email',
@@ -61,8 +50,6 @@ export class ContactView {
 			});
 			toggleSubmitState();
 		});
-
-		// Обработка ввода телефона
 		phoneInput.addEventListener('input', () => {
 			this.emitter.emit('contacts:change', {
 				field: 'phone',
@@ -70,19 +57,14 @@ export class ContactView {
 			});
 			toggleSubmitState();
 		});
-
-		// Отправка формы — только при валидных данных
 		form.addEventListener('submit', (e) => {
 			e.preventDefault();
 			this.emitter.emit('order:success');
 		});
-
-		// При первом отображении формы проверим валидность
 		toggleSubmitState();
 		return clone;
 	}
 
-	// Показать ошибку
 	showError(field: keyof TContactModal, message: string): void {
 		const form = document.querySelector(
 			'form[name="contacts"]'
@@ -90,7 +72,6 @@ export class ContactView {
 		showFormError(form, message);
 	}
 
-	// Скрыть ошибку
 	hideError(field: keyof TContactModal): void {
 		const form = document.querySelector(
 			'form[name="contacts"]'

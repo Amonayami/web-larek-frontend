@@ -60,6 +60,7 @@
     border-radius: 2.5rem;
     margin-bottom: 12px;
     color: $primary;
+    align-self: flex-start;
 
     &_soft {
       background-color: $category1;
@@ -81,6 +82,6 @@
 
   }
   &__price {
-
+    align-self: flex-start;
   }
 }

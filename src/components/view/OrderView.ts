@@ -8,17 +8,13 @@ import {
 } from '../../utils/validation';
 
 export class OrderView {
-	// Получаем шаблон формы из DOM
 	protected template = document.getElementById('order') as HTMLTemplateElement;
 
 	constructor(protected emitter: EventEmitter) {}
 
 	render(data: TOrderModal): HTMLElement {
-		// Клонируем шаблон
 		const clone = this.template.content.cloneNode(true) as HTMLElement;
 		const form = clone.querySelector('form') as HTMLFormElement;
-
-		// Находим элементы формы
 		const addressInput = form.querySelector<HTMLInputElement>(
 			'input[name="address"]'
 		);
@@ -29,22 +25,14 @@ export class OrderView {
 			'button[type="submit"]'
 		);
 		const errorSpan = form.querySelector<HTMLSpanElement>('.form__errors');
-
-
-		// Переключает состояние кнопки отправки и отображает ошибки
 		const toggleSubmitState = () => {
 			const address = addressInput?.value.trim() || '';
 			const selectedPayment =
 				Array.from(buttons).find((b) =>
 					b.classList.contains('button_alt-active')
 				)?.name || '';
-
 			const isValid = isOrderValid(address, selectedPayment);
-
-			// Кнопка активна, только если все валидно
 			if (submitButton) submitButton.disabled = !isValid;
-
-			// Показываем текст ошибки внизу формы
 			if (errorSpan) {
 				if (!address && !selectedPayment) {
 					errorSpan.textContent = 'Введите адрес и выберите способ оплаты';
@@ -58,7 +46,6 @@ export class OrderView {
 			}
 		};
 
-		// Адрес: подставляем и следим за изменениями
 		if (addressInput) {
 			addressInput.value = data.address;
 			addressInput.addEventListener('input', () => {
@@ -70,11 +57,11 @@ export class OrderView {
 			});
 		}
 
-		// Кнопки выбора оплаты: подставляем активную и слушаем клики
 		buttons.forEach((button) => {
 			if (button.name) {
 				if (data.payment === button.name) {
 					button.classList.add('button_alt-active');
+					toggleSubmitState();
 				}
 				button.addEventListener('click', () => {
 					buttons.forEach((b) => b.classList.remove('button_alt-active'));
@@ -88,17 +75,28 @@ export class OrderView {
 			}
 		});
 
-		// Отправка формы
 		form.addEventListener('submit', (e) => {
 			e.preventDefault();
-			this.emitter.emit('order:submit');
+			const address = addressInput?.value.trim() || '';
+			const selectedPayment =
+				Array.from(buttons).find((b) =>
+					b.classList.contains('button_alt-active')
+				)?.name || '';
+			if (isOrderValid(address, selectedPayment)) {
+				this.emitter.emit('order:submit');
+			} else {
+				if (!address || !isValidAddress(address)) {
+					this.showError('address', 'Введите корректный адрес');
+				}
+				if (!selectedPayment && errorSpan) {
+					errorSpan.textContent = 'Выберите способ оплаты';
+				}
+			}
 		});
-
 		toggleSubmitState();
 		return clone;
 	}
 
-	// Показывает ошибку
 	showError(field: keyof TOrderModal, message: string): void {
 		const form = document.querySelector(
 			'form[name="order"]'
@@ -106,7 +104,6 @@ export class OrderView {
 		showFormError(form, message);
 	}
 
-	// Скрывает ошибку
 	hideError(field: keyof TOrderModal): void {
 		const form = document.querySelector(
 			'form[name="order"]'
